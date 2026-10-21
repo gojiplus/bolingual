@@ -13,11 +13,9 @@ extensions = [
     "sphinx_copybutton",
 ]
 
-templates_path = ["_templates"]
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
 
 html_theme = "furo"
-html_static_path = ["_static"]
 
 html_theme_options = {
     "source_repository": "https://github.com/soodoku/bolingual",
