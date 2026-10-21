@@ -6,33 +6,51 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   test:
     runs-on: ubuntu-latest
+    env:
+      UV_PYTHON: ${{ matrix.python-version }}
     strategy:
       matrix:
-        python-version: ["3.12", "3.13"]
+        python-version: ["3.12", "3.14"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
 
       - name: Set up Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv sync --all-extras
+        run: uv sync --locked --all-extras
 
       - name: Lint with ruff
-        run: uv run ruff check src tests
+        run: uv run ruff check bolingual tests
 
       - name: Format check with ruff
-        run: uv run ruff format --check src tests
+        run: uv run ruff format --check bolingual tests
 
       - name: Type check with mypy
-        run: uv run mypy src
+        run: uv run mypy bolingual
 
       - name: Run tests
         run: uv run pytest -v
+
+      - name: Test installed wheel
+        run: |
+          uv build
+          uv venv /tmp/wheel-test
+          for wheel in dist/*.whl; do
+            uv pip install --python /tmp/wheel-test/bin/python "${wheel}[app]" pytest
+          done
+          cd /tmp
+          /tmp/wheel-test/bin/python -m pytest --import-mode=importlib "$GITHUB_WORKSPACE/tests" -q
+          /tmp/wheel-test/bin/bolingual-query --help
